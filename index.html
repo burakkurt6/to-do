@@ -315,6 +315,27 @@
   }
   .bar span.flash{ animation:barFlash .75s ease; }
 
+  /* %100 kutlama konfetisi — terminal glifleri, kısa patlama, kendiliğinden kaybolur */
+  .progress{ position:relative; }
+  .confetti-layer{
+    position:absolute; left:0; right:0; top:0; bottom:0;
+    pointer-events:none; overflow:visible; z-index:5;
+  }
+  .confetti-piece{
+    position:absolute; top:100%;
+    font-family:var(--mono); font-size:12px; font-weight:700; line-height:1;
+    opacity:0; will-change:transform,opacity;
+    animation:confettiBurst var(--dur,1.2s) ease-out forwards;
+  }
+  @keyframes confettiBurst{
+    0%{   transform:translate(-50%,0) rotate(0deg) scale(.7); opacity:0; }
+    12%{  opacity:1; }
+    100%{ transform:translate(calc(-50% + var(--dx)), var(--dy)) rotate(var(--rot)) scale(1); opacity:0; }
+  }
+  @media(prefers-reduced-motion:reduce){
+    .confetti-layer{ display:none; }
+  }
+
   /* Geri Al bildirimi (toast) */
   .toast{
     position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);
@@ -755,6 +776,40 @@ function taskLi(t, {active}){
   </li>`;
 }
 
+// Kısa, terminal temalı konfeti patlaması (ilerleme çubuğunun etrafında).
+// Saf CSS/JS; parçalar animasyon bitince kendiliğinden silinir.
+function celebrate(bucket){
+  const bar = document.getElementById(bucket+"Bar");
+  const prog = bar && bar.closest(".progress");
+  if(!prog) return;
+  const old = prog.querySelector(".confetti-layer");
+  if(old) old.remove();
+
+  const layer = document.createElement("div");
+  layer.className = "confetti-layer";
+  const glyphs = ["+","*","▮","▪","•","/","\\","·"];
+  const colors = ["var(--green-live)","var(--green-chrome)","var(--amber)"];
+  const N = 14;
+  for(let i=0;i<N;i++){
+    const s = document.createElement("span");
+    s.className = "confetti-piece";
+    s.textContent = glyphs[(Math.random()*glyphs.length)|0];
+    const dx  = (Math.random()*2-1)*90;          // yatay yayılma
+    const dy  = -(30 + Math.random()*75);        // yukarı doğru patlama
+    const rot = (Math.random()*2-1)*220;         // dönüş
+    const dur = 0.9 + Math.random()*0.6;         // 0.9–1.5 sn
+    s.style.setProperty("--dx",  dx.toFixed(0)+"px");
+    s.style.setProperty("--dy",  dy.toFixed(0)+"px");
+    s.style.setProperty("--rot", rot.toFixed(0)+"deg");
+    s.style.setProperty("--dur", dur.toFixed(2)+"s");
+    s.style.left  = (25 + Math.random()*50)+"%";
+    s.style.color = colors[(Math.random()*colors.length)|0];
+    layer.appendChild(s);
+  }
+  prog.appendChild(layer);
+  setTimeout(()=>layer.remove(), 1800);
+}
+
 function renderBucket(bucket){
   const activeEl = document.getElementById(bucket+"Active");
   const doneEl   = document.getElementById(bucket+"DoneList");
@@ -782,6 +837,7 @@ function renderBucket(bucket){
   const isFull = p.total>0 && p.done===p.total;
   if(isFull && !prevFull[bucket]){
     barEl.classList.remove("flash"); void barEl.offsetWidth; barEl.classList.add("flash");
+    celebrate(bucket);
   }
   if(!isFull) barEl.classList.remove("flash");
   prevFull[bucket] = isFull;
