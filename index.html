@@ -328,8 +328,9 @@
     animation:confettiBurst var(--dur,1.2s) ease-out forwards;
   }
   @keyframes confettiBurst{
-    0%{   transform:translate(-50%,0) rotate(0deg) scale(.7); opacity:0; }
-    12%{  opacity:1; }
+    0%{   transform:translate(-50%,0) rotate(0deg) scale(.6); opacity:0; }
+    12%{  transform:translate(-50%,-6px) rotate(calc(var(--rot) * .12)) scale(1); opacity:1; }
+    65%{  opacity:.95; }
     100%{ transform:translate(calc(-50% + var(--dx)), var(--dy)) rotate(var(--rot)) scale(1); opacity:0; }
   }
   @media(prefers-reduced-motion:reduce){
@@ -776,7 +777,22 @@ function taskLi(t, {active}){
   </li>`;
 }
 
-// Kısa, terminal temalı konfeti patlaması (ilerleme çubuğunun etrafında).
+// —— Kutlama konfeti ayarları (ince ayar için buradan değiştir) ——
+const CONFETTI = {
+  count:       50,     // parçacık sayısı
+  durMin:      1.5,    // en kısa ömür (sn)
+  durMax:      2.5,    // en uzun ömür (sn)
+  spreadX:    170,     // yatay yayılma (px, ±)
+  riseMax:    215,     // yukarı en fazla çıkış (px)
+  fallMax:    120,     // aşağı en fazla iniş (px)
+  sizeMin:     10,     // en küçük glif (px)
+  sizeMax:     19,     // en büyük glif (px)
+  rot:        260,     // dönüş aralığı (deg, ±)
+  spawnSpan:   64,     // çıkış noktası yatay dağılımı (% genişlik)
+  whiteChance:0.14     // beyaz kıvılcım olasılığı (0–1)
+};
+
+// Terminal temalı konfeti patlaması (ilerleme çubuğunun etrafında).
 // Saf CSS/JS; parçalar animasyon bitince kendiliğinden silinir.
 function celebrate(bucket){
   const bar = document.getElementById(bucket+"Bar");
@@ -785,29 +801,34 @@ function celebrate(bucket){
   const old = prog.querySelector(".confetti-layer");
   if(old) old.remove();
 
+  const C = CONFETTI;
+  const rand = (a,b)=>a+Math.random()*(b-a);
   const layer = document.createElement("div");
   layer.className = "confetti-layer";
   const glyphs = ["+","*","▮","▪","•","/","\\","·"];
-  const colors = ["var(--green-live)","var(--green-chrome)","var(--amber)"];
-  const N = 14;
-  for(let i=0;i<N;i++){
+  const greens = ["var(--green-live)","var(--green-chrome)","#7dffa0"];
+  for(let i=0;i<C.count;i++){
     const s = document.createElement("span");
     s.className = "confetti-piece";
     s.textContent = glyphs[(Math.random()*glyphs.length)|0];
-    const dx  = (Math.random()*2-1)*90;          // yatay yayılma
-    const dy  = -(30 + Math.random()*75);        // yukarı doğru patlama
-    const rot = (Math.random()*2-1)*220;         // dönüş
-    const dur = 0.9 + Math.random()*0.6;         // 0.9–1.5 sn
+    const dx  = rand(-C.spreadX, C.spreadX);        // yatay yayılma
+    const dy  = rand(-C.riseMax, C.fallMax);        // dikey yayılma (yukarı + aşağı)
+    const rot = rand(-C.rot, C.rot);                // dönüş
+    const dur = rand(C.durMin, C.durMax);           // ömür (sn)
+    const size = rand(C.sizeMin, C.sizeMax);        // boyut çeşitliliği
     s.style.setProperty("--dx",  dx.toFixed(0)+"px");
     s.style.setProperty("--dy",  dy.toFixed(0)+"px");
     s.style.setProperty("--rot", rot.toFixed(0)+"deg");
     s.style.setProperty("--dur", dur.toFixed(2)+"s");
-    s.style.left  = (25 + Math.random()*50)+"%";
-    s.style.color = colors[(Math.random()*colors.length)|0];
+    s.style.fontSize = size.toFixed(0)+"px";
+    s.style.left  = (50 - C.spawnSpan/2 + Math.random()*C.spawnSpan)+"%";
+    s.style.color = (Math.random() < C.whiteChance)
+      ? "var(--task-text)"                          // az sayıda beyaz kıvılcım
+      : greens[(Math.random()*greens.length)|0];
     layer.appendChild(s);
   }
   prog.appendChild(layer);
-  setTimeout(()=>layer.remove(), 1800);
+  setTimeout(()=>layer.remove(), C.durMax*1000 + 250);
 }
 
 function renderBucket(bucket){
@@ -837,7 +858,9 @@ function renderBucket(bucket){
   const isFull = p.total>0 && p.done===p.total;
   if(isFull && !prevFull[bucket]){
     barEl.classList.remove("flash"); void barEl.offsetWidth; barEl.classList.add("flash");
-    celebrate(bucket);
+    // Konfetiyi bir sonraki kareye ertele: ağır render bitip ekran boyandıktan sonra
+    // temiz bir karede başlasın (aksi halde başlangıçta takılıp atlıyordu).
+    requestAnimationFrame(()=>celebrate(bucket));
   }
   if(!isFull) barEl.classList.remove("flash");
   prevFull[bucket] = isFull;
