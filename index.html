@@ -111,7 +111,7 @@
   /* Input row */
   .addrow{display:flex;gap:8px;margin-bottom:12px;}
   .addrow input{
-    flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;color:var(--task-text);
+    flex:1;min-width:0;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;color:var(--task-text);
     font-family:var(--mono);font-size:14px;padding:11px 12px;outline:none;transition:.15s;
   }
   .addrow input::placeholder{color:var(--green-ghost);}
@@ -338,6 +338,20 @@
   }
   .cal-cell.today .dnum{color:#eaffea;opacity:1;}
   .cal-cell.today .rate{color:#eaffea;}
+
+  /* --- Dar ekran / telefon düzeni (en sonda: temel kuralları geçersiz kılsın) --- */
+  @media(max-width:768px){
+    body{padding:20px 12px 48px;}
+    /* Ekleme satırı: input tam genişlik; saat seçici ve EKLE alt satırda tam otursun */
+    .addrow{flex-wrap:wrap;}
+    .addrow input{flex:1 0 100%;}
+    .addrow .timepick{flex:1 1 auto;justify-content:center;}
+    .addrow .btn{flex:1 1 auto;padding:12px 16px;}
+    /* Üst sağ butonlar sıkışıp üst üste binmesin */
+    .head-right{flex-wrap:wrap;justify-content:flex-start;gap:10px;}
+    /* Alt bilgi taşmasın, satırlara sığsın */
+    footer{padding:0 8px;overflow-wrap:break-word;}
+  }
 </style>
 <script>
   // Kaydedilmiş temayı body boyanmadan uygula (yanıp sönme olmasın); varsayılan koyu

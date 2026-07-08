@@ -2,7 +2,7 @@
    Basit "cache-first" strateji. Alt klasörde (/to-do/) çalışacak şekilde
    tüm yollar GÖRELİ olarak ("./") register edildiği scope'a göre çözülür. */
 
-const CACHE = 'todo-cache-v1';
+const CACHE = 'todo-cache-v2';
 
 // Register scope'una göre çözülen göreli çekirdek dosyalar.
 const CORE_ASSETS = [
